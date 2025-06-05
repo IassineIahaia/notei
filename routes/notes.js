@@ -79,5 +79,24 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 });
 
+router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id).populate('author');
+
+        if (!note) {
+            return res.status(404).json({ error: 'Nota não encontrada' });
+        }
+
+        if (!note.author || note.author._id.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        await note.deleteOne(); 
+        res.status(200).json({ message: 'Nota excluída com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao excluir a nota' });
+    }
+});
+
 
 module.exports = router;
