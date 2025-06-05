@@ -3,7 +3,7 @@ const router = express.Router();
 const Note = require('../models/note');
 const authMiddleware = require('../middlewares/auth'); 
 
-// Proteger a rota com o middleware
+
 router.post('/', authMiddleware, async (req, res) => {
     const { title, description } = req.body;
 
@@ -15,12 +15,41 @@ router.post('/', authMiddleware, async (req, res) => {
         const note = await Note.create({
             title,
             description,
-            author: req.user.id  // <- agora funciona!
+            author: req.user.id  
         });
         res.status(201).json(note);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 });
+
+router.get('/:id', authMiddleware, async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id).populate('author', 'name email');
+
+        if (!note) {
+            return res.status(404).json({ error: 'Nota não encontrada' });
+        }
+
+        if (note.author._id.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        res.status(200).json(note);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+
+router.get('/', authMiddleware, async (req, res) => {
+    try {
+        const notes = await Note.find({ author: req.user.id }).populate('author', 'name email');
+        res.status(200).json(notes);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 
 module.exports = router;
