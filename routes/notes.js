@@ -23,6 +23,28 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
+router.get('/search', authMiddleware, async (req, res) => {
+    const query = req.query.q;
+
+    const searchCriteria = {
+        author: req.user.id
+    };
+
+    if (query) {
+        searchCriteria.$or = [
+            { title: { $regex: query, $options: 'i' } },
+            { description: { $regex: query, $options: 'i' } }
+        ];
+    }
+
+    try {
+        const notes = await Note.find(searchCriteria).populate('author', 'name email');
+        res.status(200).json(notes);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const note = await Note.findById(req.params.id).populate('author', 'name email');
@@ -40,6 +62,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+
+
 
 
 router.get('/', authMiddleware, async (req, res) => {
