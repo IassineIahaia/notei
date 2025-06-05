@@ -51,6 +51,33 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
+router.put('/:id', authMiddleware, async (req, res) => {
+    const { title, description } = req.body;
+
+    if (!title || !description) {
+        return res.status(400).json({ error: 'Título e descrição são obrigatórios.' });
+    }
+
+    try {
+        const note = await Note.findById(req.params.id).populate('author');
+
+        if (!note) {
+            return res.status(404).json({ error: 'Nota não encontrada' });
+        }
+
+        if (!note.author || note.author._id.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        note.title = title;
+        note.description = description;
+
+        await note.save();
+        res.status(200).json(note);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar a nota' });
+    }
+});
 
 
 module.exports = router;
